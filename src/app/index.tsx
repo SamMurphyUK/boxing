@@ -1,71 +1,76 @@
-import { useEffect } from 'react';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { useState } from 'react';
+import { Modal, StyleSheet, Text, View } from 'react-native';
 
-import { haptics } from '@services/haptics';
-import { useGameStore } from '@/store/game-store';
+import { Button } from '@/components/button';
+import { Screen } from '@/components/screen';
+import { usePromoterStore } from '@/store/promoter-store';
+import { colors, fonts } from '@/theme';
 
-const TICK_MS = 250;
+export default function TitleScreen() {
+  const hasSave = usePromoterStore((s) => s.hasSave);
+  const wipe = usePromoterStore((s) => s.wipe);
+  const [confirming, setConfirming] = useState(false);
 
-export default function HomeScreen() {
-  const coins = useGameStore((s) => s.state.coins);
-  const taps = useGameStore((s) => s.state.taps);
-  const tap = useGameStore((s) => s.tap);
-  const tick = useGameStore((s) => s.tick);
-
-  useEffect(() => {
-    const id = setInterval(() => tick(TICK_MS / 1000), TICK_MS);
-    return () => clearInterval(id);
-  }, [tick]);
-
-  const onPress = () => {
-    tap();
-    haptics.trigger('light');
+  const startNew = () => {
+    if (hasSave) setConfirming(true);
+    else router.push('/setup');
   };
 
   return (
-    <SafeAreaView style={styles.safe}>
-      <View style={styles.container}>
-        <Text style={styles.wordmark}>RINGSIDE</Text>
-        <Text style={styles.title}>It runs.</Text>
-        <Text style={styles.subtitle}>
-          {Platform.OS === 'web' ? 'Web preview' : `Expo Go on ${Platform.OS}`}
+    <Screen style={styles.container}>
+      <Text style={styles.wordmark}>RINGSIDE</Text>
+      <View style={styles.hero}>
+        <Text style={styles.kicker}>A boxing promotion game</Text>
+        <Text style={styles.title}>THE{'\n'}PROMOTER</Text>
+        <Text style={styles.tagline}>
+          Sign fighters. Make the matches. Keep the cash, the hype, the stable and your reputation alive. Push any of
+          them too far and it is over.
         </Text>
-
-        <View style={styles.stats}>
-          <Text style={styles.statValue}>{Math.floor(coins)}</Text>
-          <Text style={styles.statLabel}>coins · {taps} taps</Text>
-        </View>
-
-        <Pressable
-          onPress={onPress}
-          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-          accessibilityRole="button"
-        >
-          <Text style={styles.buttonText}>TAP</Text>
-        </Pressable>
       </View>
-    </SafeAreaView>
+      <View style={styles.actions}>
+        {hasSave && <Button label="Continue" onPress={() => router.push('/game')} testID="continue" />}
+        <Button
+          label="New career"
+          variant={hasSave ? 'ghost' : 'gold'}
+          onPress={startNew}
+          testID="new-career"
+        />
+      </View>
+
+      <Modal transparent visible={confirming} animationType="fade" onRequestClose={() => setConfirming(false)}>
+        <View style={styles.scrim}>
+          <View style={styles.dialog}>
+            <Text style={styles.dialogTitle}>Wipe the current career?</Text>
+            <Text style={styles.dialogText}>Your saved run will be deleted. The fighters will not forgive you.</Text>
+            <Button
+              label="Wipe it"
+              variant="red"
+              small
+              onPress={() => {
+                wipe();
+                setConfirming(false);
+                router.push('/setup');
+              }}
+            />
+            <Button label="Keep it" variant="ghost" small onPress={() => setConfirming(false)} />
+          </View>
+        </View>
+      </Modal>
+    </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: '#0b0b10' },
-  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
-  wordmark: { color: '#e8b547', fontSize: 14, letterSpacing: 4, fontWeight: '700' },
-  title: { color: '#f4f1ea', fontSize: 40, fontWeight: '800' },
-  subtitle: { color: '#9a97a8', fontSize: 15 },
-  stats: { alignItems: 'center', marginTop: 24, marginBottom: 32 },
-  statValue: { color: '#f4f1ea', fontSize: 56, fontWeight: '800', fontVariant: ['tabular-nums'] },
-  statLabel: { color: '#9a97a8', fontSize: 14 },
-  button: {
-    backgroundColor: '#e0323c',
-    paddingVertical: 20,
-    paddingHorizontal: 64,
-    borderRadius: 999,
-    minHeight: 64,
-    justifyContent: 'center',
-  },
-  buttonPressed: { transform: [{ scale: 0.96 }], opacity: 0.9 },
-  buttonText: { color: '#fff', fontSize: 22, fontWeight: '800', letterSpacing: 2 },
+  container: { justifyContent: 'space-between', paddingVertical: 20 },
+  wordmark: { fontFamily: fonts.display, fontSize: 22, letterSpacing: 6, color: colors.gold },
+  hero: { gap: 14 },
+  kicker: { fontFamily: fonts.bodySemi, fontSize: 13, letterSpacing: 2, color: colors.muted, textTransform: 'uppercase' },
+  title: { fontFamily: fonts.display, fontSize: 92, lineHeight: 88, color: colors.ink },
+  tagline: { fontFamily: fonts.body, fontSize: 16, lineHeight: 24, color: colors.muted, maxWidth: 380 },
+  actions: { gap: 12 },
+  scrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center', padding: 24 },
+  dialog: { width: '100%', maxWidth: 360, backgroundColor: colors.panel, borderRadius: 18, padding: 22, gap: 12 },
+  dialogTitle: { fontFamily: fonts.display, fontSize: 30, color: colors.ink },
+  dialogText: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: colors.muted, marginBottom: 6 },
 });

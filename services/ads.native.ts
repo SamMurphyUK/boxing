@@ -1,13 +1,9 @@
 import type { AdsService } from './types';
 
-// Ad SDKs (e.g. react-native-google-mobile-ads) need a development build, not Expo Go,
-// so this stays a logging placeholder until the ad network is chosen.
+// Real ad SDKs need a development build, not Expo Go. Until one is wired in, this placeholder
+// grants the reward so the second-chance flow can be exercised on a phone.
 export const ads: AdsService = {
-  initialize: async () => {
-    console.log('[ads] initialize');
-  },
-  showRewarded: async () => {
-    console.log('[ads] showRewarded');
-    return { rewarded: false };
-  },
+  available: true,
+  initialize: async () => {},
+  showRewarded: async () => ({ rewarded: true }),
 };
