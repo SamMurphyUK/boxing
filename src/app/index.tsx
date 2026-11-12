@@ -1,98 +1,71 @@
-import * as Device from 'expo-device';
-import { Platform, StyleSheet } from 'react-native';
+import { useEffect } from 'react';
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { AnimatedIcon } from '@/components/animated-icon';
-import { HintRow } from '@/components/hint-row';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { WebBadge } from '@/components/web-badge';
-import { BottomTabInset, MaxContentWidth, Spacing } from '@/constants/theme';
+import { haptics } from '@services/haptics';
+import { useGameStore } from '@/store/game-store';
 
-function getDevMenuHint() {
-  if (Platform.OS === 'web') {
-    return <ThemedText type="small">use browser devtools</ThemedText>;
-  }
-  if (Device.isDevice) {
-    return (
-      <ThemedText type="small">
-        shake device or press <ThemedText type="code">m</ThemedText> in terminal
-      </ThemedText>
-    );
-  }
-  const shortcut = Platform.OS === 'android' ? 'cmd+m (or ctrl+m)' : 'cmd+d';
-  return (
-    <ThemedText type="small">
-      press <ThemedText type="code">{shortcut}</ThemedText>
-    </ThemedText>
-  );
-}
+const TICK_MS = 250;
 
 export default function HomeScreen() {
+  const coins = useGameStore((s) => s.state.coins);
+  const taps = useGameStore((s) => s.state.taps);
+  const tap = useGameStore((s) => s.tap);
+  const tick = useGameStore((s) => s.tick);
+
+  useEffect(() => {
+    const id = setInterval(() => tick(TICK_MS / 1000), TICK_MS);
+    return () => clearInterval(id);
+  }, [tick]);
+
+  const onPress = () => {
+    tap();
+    haptics.trigger('light');
+  };
+
   return (
-    <ThemedView style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        <ThemedView style={styles.heroSection}>
-          <AnimatedIcon />
-          <ThemedText type="title" style={styles.title}>
-            Welcome to&nbsp;Expo
-          </ThemedText>
-        </ThemedView>
+    <SafeAreaView style={styles.safe}>
+      <View style={styles.container}>
+        <Text style={styles.wordmark}>RINGSIDE</Text>
+        <Text style={styles.title}>It runs.</Text>
+        <Text style={styles.subtitle}>
+          {Platform.OS === 'web' ? 'Web preview' : `Expo Go on ${Platform.OS}`}
+        </Text>
 
-        <ThemedText type="code" style={styles.code}>
-          get started
-        </ThemedText>
+        <View style={styles.stats}>
+          <Text style={styles.statValue}>{Math.floor(coins)}</Text>
+          <Text style={styles.statLabel}>coins · {taps} taps</Text>
+        </View>
 
-        <ThemedView type="backgroundElement" style={styles.stepContainer}>
-          <HintRow
-            title="Try editing"
-            hint={<ThemedText type="code">src/app/index.tsx</ThemedText>}
-          />
-          <HintRow title="Dev tools" hint={getDevMenuHint()} />
-          <HintRow
-            title="Fresh start"
-            hint={<ThemedText type="code">npm run reset-project</ThemedText>}
-          />
-        </ThemedView>
-
-        {Platform.OS === 'web' && <WebBadge />}
-      </SafeAreaView>
-    </ThemedView>
+        <Pressable
+          onPress={onPress}
+          style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+          accessibilityRole="button"
+        >
+          <Text style={styles.buttonText}>TAP</Text>
+        </Pressable>
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  safe: { flex: 1, backgroundColor: '#0b0b10' },
+  container: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24, gap: 12 },
+  wordmark: { color: '#e8b547', fontSize: 14, letterSpacing: 4, fontWeight: '700' },
+  title: { color: '#f4f1ea', fontSize: 40, fontWeight: '800' },
+  subtitle: { color: '#9a97a8', fontSize: 15 },
+  stats: { alignItems: 'center', marginTop: 24, marginBottom: 32 },
+  statValue: { color: '#f4f1ea', fontSize: 56, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  statLabel: { color: '#9a97a8', fontSize: 14 },
+  button: {
+    backgroundColor: '#e0323c',
+    paddingVertical: 20,
+    paddingHorizontal: 64,
+    borderRadius: 999,
+    minHeight: 64,
     justifyContent: 'center',
-    flexDirection: 'row',
   },
-  safeArea: {
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    alignItems: 'center',
-    gap: Spacing.three,
-    paddingBottom: BottomTabInset + Spacing.three,
-    maxWidth: MaxContentWidth,
-  },
-  heroSection: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    flex: 1,
-    paddingHorizontal: Spacing.four,
-    gap: Spacing.four,
-  },
-  title: {
-    textAlign: 'center',
-  },
-  code: {
-    textTransform: 'uppercase',
-  },
-  stepContainer: {
-    gap: Spacing.three,
-    alignSelf: 'stretch',
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.four,
-    borderRadius: Spacing.four,
-  },
+  buttonPressed: { transform: [{ scale: 0.96 }], opacity: 0.9 },
+  buttonText: { color: '#fff', fontSize: 22, fontWeight: '800', letterSpacing: 2 },
 });

@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "ringside-mobile",
+    "name": "Ringside",
     "slug": "ringside-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -20,7 +20,7 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "output": "server",
+      "output": "static",
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [

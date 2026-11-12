@@ -8,6 +8,12 @@
       ],
       "@/assets/*": [
         "./assets/*"
+      ],
+      "@game/*": [
+        "./game/*"
+      ],
+      "@services/*": [
+        "./services/*"
       ]
     }
   },
