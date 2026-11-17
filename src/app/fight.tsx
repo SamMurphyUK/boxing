@@ -6,7 +6,9 @@ import Animated, { FadeIn, FadeInDown, useAnimatedStyle, useSharedValue, withTim
 import { money, taleOfTheTape, type FighterStats, type LogLine, type Meter, type RoundMark } from '@game/index';
 import { Button } from '@/components/button';
 import { Screen } from '@/components/screen';
+import { SkeletonRing } from '@/components/skeleton-ring';
 import { haptics } from '@services/haptics';
+import { useLudusStore } from '@/store/ludus-store';
 import { usePromoterStore } from '@/store/promoter-store';
 import { colors, fonts } from '@/theme';
 
@@ -17,6 +19,18 @@ const DELTA_LABELS: Record<Meter, string> = { cash: 'Cash', hype: 'Hype', stable
 const LINE_DELAY: Record<LogLine['tone'], number> = { round: 500, plain: 600, good: 600, bad: 600, big: 1000, bigBad: 1000 };
 
 export default function FightScreen() {
+  const ludus = useLudusStore((s) => s.ludus);
+  if (ludus && (ludus.stage === 'ARENA' || ludus.stage === 'POST_FIGHT') && ludus.fight) {
+    return (
+      <Screen>
+        <SkeletonRing />
+      </Screen>
+    );
+  }
+  return <SwipeFight />;
+}
+
+function SwipeFight() {
   const career = usePromoterStore((s) => s.career);
   const fight = usePromoterStore((s) => s.fight);
   const prompt = usePromoterStore((s) => s.prompt);

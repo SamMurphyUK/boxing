@@ -6,9 +6,11 @@ import { activeFighter, record, viewCard, type Side } from '@game/index';
 import { MetersBar } from '@/components/meters-bar';
 import { NewsTicker } from '@/components/news-ticker';
 import { Screen } from '@/components/screen';
+import { StableRoom } from '@/components/stable-room';
 import { SwipeCard, type SwipeCardHandle } from '@/components/swipe-card';
 import { Toast } from '@/components/toast';
 import { haptics } from '@services/haptics';
+import { useLudusStore } from '@/store/ludus-store';
 import { usePromoterStore } from '@/store/promoter-store';
 import { colors, fonts } from '@/theme';
 
@@ -17,6 +19,19 @@ const MAX_CARD_WIDTH = 380;
 const HINT_CARD_COUNT = 3;
 
 export default function GameScreen() {
+  const ludus = useLudusStore((s) => s.ludus);
+  if (ludus?.stage === 'ARENA' || ludus?.stage === 'POST_FIGHT') return <Redirect href="/fight" />;
+  if (ludus) {
+    return (
+      <Screen>
+        <StableRoom />
+      </Screen>
+    );
+  }
+  return <SwipeGame />;
+}
+
+function SwipeGame() {
   const career = usePromoterStore((s) => s.career);
   const ending = usePromoterStore((s) => s.ending);
   const toast = usePromoterStore((s) => s.toast);

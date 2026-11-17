@@ -207,3 +207,191 @@ export interface TaleOfTheTape {
   purse: number;
   title: string;
 }
+
+/** Five-stage ludus loop. Separate from the swipe `Career` meters so existing saves stay valid. */
+export type LudusStage = 'INTRO' | 'STABLE_ROOM' | 'CAMP_VIGNETTE' | 'ARENA' | 'POST_FIGHT';
+
+/**
+ * Asymmetric promotion meters.
+ * cash loses at <= 0 and is uncapped upward.
+ * hype loses at <= 0 and is uncapped upward.
+ * ego loses at >= 100 (the star walks out).
+ * heat loses at >= 100 (the licence is suspended).
+ */
+export interface LudusMeters {
+  cash: number;
+  hype: number;
+  ego: number;
+  heat: number;
+}
+
+export interface MeterDelta {
+  cash: number;
+  hype: number;
+  ego: number;
+  heat: number;
+}
+
+export type LudusTrait = 'proud' | 'hungry' | 'loyal' | 'volatile' | 'showman' | 'quiet';
+
+export interface LudusBoxer {
+  id: string;
+  name: string;
+  nick: string;
+  traits: LudusTrait[];
+  /** Personal pride. The promotion meter `meters.ego` is separate. */
+  ego: number;
+  hp: number;
+  maxHp: number;
+  stamina: number;
+  maxStamina: number;
+  agility: number;
+  strength: number;
+  reach: number;
+  fights: number;
+  colour: string;
+}
+
+export type VignettePlace = 'Gym' | 'Press' | 'Bar';
+
+export interface VignetteChoice extends MeterDelta {
+  label: string;
+}
+
+export interface VignetteBeat {
+  place: VignettePlace;
+  text: string;
+  left: VignetteChoice;
+  right: VignetteChoice;
+}
+
+export interface RoomLine {
+  speakerId: string;
+  text: string;
+}
+
+export type PhoneIntent = 'THREATEN' | 'BRIBE' | 'HYPE_UP' | 'HUMBLE' | 'TACTICAL';
+export type PhoneTone = 'harsh' | 'slick' | 'hot' | 'soft' | 'flat';
+export type PhoneVerdict = 'OBEY' | 'DEFY';
+
+export interface PhoneRead {
+  intent: PhoneIntent;
+  tone: PhoneTone;
+  nouns: string[];
+}
+
+export interface PhoneResolution extends PhoneRead {
+  verdict: PhoneVerdict;
+  reply: string;
+}
+
+export type JointName = 'root' | 'torso' | 'head' | 'leadHand' | 'rearHand' | 'leadFoot' | 'rearFoot';
+export type PunchName = 'jab' | 'cross' | 'leadHook' | 'bodyRip' | 'overhand';
+export type CornerPlan = 'normal' | 'press' | 'shell' | 'body' | 'box';
+
+/** Ground plane. `x` runs across the 320-wide frame, `z` runs into the room. */
+export interface JointPoint {
+  x: number;
+  z: number;
+}
+
+export type Pose = Record<JointName, JointPoint>;
+
+export interface PunchTelemetry {
+  thrown: Record<PunchName, number>;
+  landed: Record<PunchName, number>;
+  damageDealt: number;
+  damageTaken: number;
+}
+
+export interface SkeletonBody {
+  id: string;
+  name: string;
+  traits: LudusTrait[];
+  ego: number;
+  hp: number;
+  maxHp: number;
+  stamina: number;
+  maxStamina: number;
+  agility: number;
+  strength: number;
+  reach: number;
+  facing: 1 | -1;
+  anchorX: number;
+  anchorZ: number;
+  /** Pixel hand height. Stamina, ego, agility, and the corner plan all move it. */
+  guardHeight: number;
+  pose: Pose;
+  telemetry: PunchTelemetry;
+  colour: string;
+}
+
+export interface PromoterCall {
+  text: string;
+  left: string;
+  right: string;
+  leftPlan: CornerPlan;
+  rightPlan: CornerPlan;
+}
+
+export type SkeletonPhase = 'fighting' | 'intermission' | 'done';
+
+export interface ExchangeMark {
+  actor: 'blue' | 'red';
+  punch: PunchName;
+  landed: boolean;
+}
+
+export interface SkeletonFight {
+  round: number;
+  maxRounds: number;
+  exchange: number;
+  phase: SkeletonPhase;
+  blue: SkeletonBody;
+  red: SkeletonBody;
+  plan: CornerPlan;
+  call: PromoterCall | null;
+  lastExchange: ExchangeMark | null;
+  winner: 'blue' | 'red' | 'draw' | null;
+  method: FightMethod | null;
+  seed: number;
+  log: string[];
+}
+
+export interface StatGrowth {
+  boxerId: string;
+  agility: number;
+  strength: number;
+  reach: number;
+  maxStamina: number;
+  maxHp: number;
+  trait: LudusTrait | null;
+  note: string;
+}
+
+export interface LudusEnding {
+  key: 'cash' | 'hype' | 'ego' | 'heat';
+  title: string;
+  reason: string;
+}
+
+export interface LudusVignette {
+  beats: VignetteBeat[];
+  index: number;
+  awaitingPhone: boolean;
+}
+
+export interface Ludus {
+  stage: LudusStage;
+  meters: LudusMeters;
+  boxers: LudusBoxer[];
+  focusId: string | null;
+  roomLines: RoomLine[];
+  vignette: LudusVignette | null;
+  phone: PhoneResolution | null;
+  fight: SkeletonFight | null;
+  growth: StatGrowth[];
+  week: number;
+  seed: number;
+  ending: LudusEnding | null;
+}

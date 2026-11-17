@@ -1,76 +1,74 @@
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Modal, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { Platform, Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 
+import { BloodGoldStage } from '@/components/blood-gold-stage';
+import { SKIN, TRUNKS } from '@/bng/boxing/drawBoxer';
 import { Button } from '@/components/button';
 import { Screen } from '@/components/screen';
+import { useLudusStore } from '@/store/ludus-store';
 import { usePromoterStore } from '@/store/promoter-store';
 import { colors, fonts } from '@/theme';
 
+const COLD_OPEN = [
+  { x: 132, y: 172, trunks: TRUNKS.danny, skin: SKIN.danny, state: 'sparring' as const },
+  { x: 210, y: 172, trunks: TRUNKS.kofi, skin: SKIN.kofi, state: 'attack' as const, flipX: true },
+];
+
 export default function TitleScreen() {
   const hasSave = usePromoterStore((s) => s.hasSave);
-  const wipe = usePromoterStore((s) => s.wipe);
-  const [confirming, setConfirming] = useState(false);
+  const begin = useLudusStore((s) => s.begin);
+  const [ready, setReady] = useState(false);
+  const [width, setWidth] = useState(0);
 
-  const startNew = () => {
-    if (hasSave) setConfirming(true);
-    else router.push('/setup');
-  };
+  useEffect(() => {
+    const id = setTimeout(() => setReady(true), 1600);
+    return () => clearTimeout(id);
+  }, []);
+
+  const enter = useCallback(() => {
+    begin();
+    router.push('/game');
+  }, [begin]);
+
+  useEffect(() => {
+    if (!ready || Platform.OS !== 'web') return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === ' ' || event.code === 'Space') {
+        event.preventDefault();
+        enter();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [enter, ready]);
+
+  const onLayout = (event: LayoutChangeEvent) => setWidth(Math.round(event.nativeEvent.layout.width));
 
   return (
     <Screen style={styles.container}>
       <Text style={styles.wordmark}>RINGSIDE</Text>
-      <View style={styles.hero}>
-        <Text style={styles.kicker}>A boxing promotion game</Text>
-        <Text style={styles.title}>THE{'\n'}PROMOTER</Text>
-        <Text style={styles.tagline}>
-          Sign fighters. Make the matches. Keep the cash, the hype, the stable and your reputation alive. Push any of
-          them too far and it is over.
-        </Text>
+      <View onLayout={onLayout}>
+        {width > 0 && <BloodGoldStage place="ring" actors={COLD_OPEN} width={width} />}
       </View>
-      <View style={styles.actions}>
-        {hasSave && <Button label="Continue" onPress={() => router.push('/game')} testID="continue" />}
-        <Button
-          label="New career"
-          variant={hasSave ? 'ghost' : 'gold'}
-          onPress={startNew}
-          testID="new-career"
-        />
-      </View>
-
-      <Modal transparent visible={confirming} animationType="fade" onRequestClose={() => setConfirming(false)}>
-        <View style={styles.scrim}>
-          <View style={styles.dialog}>
-            <Text style={styles.dialogTitle}>Wipe the current career?</Text>
-            <Text style={styles.dialogText}>Your saved run will be deleted. The fighters will not forgive you.</Text>
-            <Button
-              label="Wipe it"
-              variant="red"
-              small
-              onPress={() => {
-                wipe();
-                setConfirming(false);
-                router.push('/setup');
-              }}
-            />
-            <Button label="Keep it" variant="ghost" small onPress={() => setConfirming(false)} />
-          </View>
-        </View>
-      </Modal>
+      {ready ? (
+        <Pressable onPress={enter} style={styles.prompt} testID="press-space">
+          <Text style={styles.promptText}>PRESS SPACE / TAP</Text>
+        </Pressable>
+      ) : (
+        <Text style={styles.waiting}>The lights come up.</Text>
+      )}
+      {ready && hasSave && (
+        <Button label="Continue saved promotion" variant="ghost" onPress={() => router.push('/game')} />
+      )}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { justifyContent: 'space-between', paddingVertical: 20 },
+  container: { justifyContent: 'space-between', paddingVertical: 16, gap: 12 },
   wordmark: { fontFamily: fonts.display, fontSize: 22, letterSpacing: 6, color: colors.gold },
-  hero: { gap: 14 },
-  kicker: { fontFamily: fonts.bodySemi, fontSize: 13, letterSpacing: 2, color: colors.muted, textTransform: 'uppercase' },
-  title: { fontFamily: fonts.display, fontSize: 92, lineHeight: 88, color: colors.ink },
-  tagline: { fontFamily: fonts.body, fontSize: 16, lineHeight: 24, color: colors.muted, maxWidth: 380 },
-  actions: { gap: 12 },
-  scrim: { flex: 1, backgroundColor: 'rgba(0,0,0,0.7)', alignItems: 'center', justifyContent: 'center', padding: 24 },
-  dialog: { width: '100%', maxWidth: 360, backgroundColor: colors.panel, borderRadius: 18, padding: 22, gap: 12 },
-  dialogTitle: { fontFamily: fonts.display, fontSize: 30, color: colors.ink },
-  dialogText: { fontFamily: fonts.body, fontSize: 15, lineHeight: 22, color: colors.muted, marginBottom: 6 },
+  prompt: { alignItems: 'center', paddingVertical: 12 },
+  promptText: { fontFamily: fonts.display, fontSize: 28, letterSpacing: 2, color: colors.ink },
+  waiting: { fontFamily: fonts.body, fontSize: 14, color: colors.muted, textAlign: 'center' },
 });

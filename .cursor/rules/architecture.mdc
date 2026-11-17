@@ -1,0 +1,17 @@
+---
+description: Core architecture and style boundaries for Ringside: The Promoter
+globs: "**/*"
+alwaysApply: true
+---
+
+# Ringside: The Promoter
+
+- NEVER import React, Expo, React Native, or `@services/*` inside `game/`. `game/` must remain 100% pure TypeScript driven by `game/rng.ts`.
+- Visual style for all characters, stable rooms, camp vignettes, and the boxing ring MUST follow a crisp, integer-snapped `320x180` *Sword & Sworcery* procedural SVG aesthetic (`Math.round()` coordinates, 1px stick legs, boxy torsos, muted fog palette, radial spotlight). All visuals are using the exact rendering system we created in Blood and Gold.
+- Do NOT add manual skill-tree menus or stat-allocation screens. Boxers level up implicitly from fight telemetry; the promoter levels up implicitly from swipe/call habits.
+- Do NOT add external LLM API calls. The burner phone uses a pure-TypeScript deterministic intent/tone classifier (`game/dialogue/phone-brain.ts`).
+
+## Where that lives
+
+- Rules, career, fights, cards, and the phone classifier go in `game/`. Seed every random outcome with `game/rng.ts`. UI in `src/` may call `game/`; `game/` never calls back into React.
+- Draw with the Blood and Gold canvas procedure in `src/bng/`: the 16-color palette, `drawDitherRect`, `drawDitherShadow`, `drawSoftAmbientBloom`, integer `fillRect`s. Offscreen buffer is `344x192`, blitted with `imageSmoothingEnabled = false`. The boxing prefab is `src/bng/boxing/` (boxer bodies, gym, press, bar, modern ring). Do not add a second renderer, and do not go back to stick-figure SVG.
